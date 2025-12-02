@@ -58,7 +58,7 @@ class Area:
     stats: Dict
 
 class OptimizedHomeBot:
-    def init(self):
+    def __init__(self):
         self.last_id = 0
         self.user_states: Dict[int, Dict] = {}
         self.devices_cache: Dict[str, List] = {}
