@@ -82,7 +82,8 @@ class OptimizedHomeBot:
                 re.compile(rf'cottage\s*{i}', re.IGNORECASE),
                 re.compile(rf'\b{i}\b', re.IGNORECASE),
                 re.compile(rf't{i}', re.IGNORECASE),
-                re.compile(rf'kws-306wf t{i}', re.IGNORECASE)
+                re.compile(rf'kws-306wf t{i}', re.IGNORECASE),
+                re.compile(rf'multimode gateway t{i}', re.IGNORECASE)
             ]
             self.HOUSE_PATTERNS[f'Домик {i}'] = patterns
         

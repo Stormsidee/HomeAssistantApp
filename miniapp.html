@@ -411,16 +411,6 @@
             }
         }
         
-        /* Animation for updates */
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-        
-        .updating {
-            animation: pulse 1s infinite;
-        }
     </style>
 </head>
 <body>
@@ -924,7 +914,6 @@
                 html += `
                     <div class="footer">
                         <div>Home Assistant Mini App</div>
-                        <div style="font-size: 11px; margin-top: 5px;">Обновляется автоматически каждые 10 сек</div>
                     </div>
                 `;
                 
