@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -24,6 +23,19 @@
             --light-gray: #f5f5f5;
             --border-color: #e0e0e0;
             --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            
+            --temperature-hot: #f44336;
+            --temperature-cold: #2196f3;
+            --temperature-normal: #4CAF50;
+            --humidity-high: #2196f3;
+            --humidity-low: #ff9800;
+            --humidity-normal: #4CAF50;
+            --battery-high: #4CAF50;
+            --battery-medium: #ff9800;
+            --battery-low: #f44336;
+            --voltage-high: #f44336;
+            --voltage-low: #ff9800;
+            --voltage-normal: #4CAF50;
         }
         
         * {
@@ -250,12 +262,43 @@
         .sensor-label {
             font-size: 13px;
             color: var(--tg-theme-hint-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
         
         .sensor-unit {
             font-size: 14px;
             color: var(--primary-color);
             margin-left: 4px;
+        }
+        
+        /* Стили для значений сенсоров */
+        .temperature-hot { color: var(--temperature-hot); }
+        .temperature-cold { color: var(--temperature-cold); }
+        .temperature-normal { color: var(--temperature-normal); }
+        
+        .humidity-high { color: var(--humidity-high); }
+        .humidity-low { color: var(--humidity-low); }
+        .humidity-normal { color: var(--humidity-normal); }
+        
+        .battery-high { color: var(--battery-high); }
+        .battery-medium { color: var(--battery-medium); }
+        .battery-low { color: var(--battery-low); }
+        
+        .voltage-high { color: var(--voltage-high); }
+        .voltage-low { color: var(--voltage-low); }
+        .voltage-normal { color: var(--voltage-normal); }
+        
+        /* Voltage Summary */
+        .voltage-summary {
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         
         /* Loading & Error States */
@@ -316,16 +359,19 @@
         
         /* Responsive */
         @media (max-width: 480px) {
-            .device-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
+            .device-grid,
             .sensor-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
             }
             
             .area-name {
                 font-size: 16px;
+            }
+        }
+        
+        @media (min-width: 481px) and (max-width: 768px) {
+            .sensor-grid {
+                grid-template-columns: repeat(3, 1fr);
             }
         }
         
@@ -351,10 +397,10 @@
     <script>
         // Конфигурация
         const CONFIG = {
-            API_BASE: '/api',  // Используем относительный путь
-            REFRESH_INTERVAL: 10000, // 10 секунд
+            API_BASE: '/api',
+            REFRESH_INTERVAL: 10000,
             BOT_TOKEN: '8536434594:AAG3n0tCFBlg5NNEAgviT5IfutQNgolH5SU',
-            SECRET_KEY: 'your-secret-key-for-auth' // Должен совпадать с config.py
+            SECRET_KEY: 'your-secret-key-for-auth'
         };
         
         // Инициализация Telegram Web App
@@ -365,20 +411,19 @@
             tg.expand();
             tg.enableClosingConfirmation();
             
-            // Устанавливаем цвет кнопки
             tg.setHeaderColor('#2481cc');
             tg.setBackgroundColor('#ffffff');
         }
         
         // Состояние приложения
         const AppState = {
-            currentView: 'areas', // 'areas', 'area', 'loading', 'error'
+            currentView: 'areas',
             currentArea: null,
             areas: {},
             areaData: null,
             isLoading: false,
             lastUpdate: null,
-            subscriptions: new Set() // Для отписки от обновлений
+            subscriptions: new Set()
         };
         
         // API клиент
@@ -469,6 +514,86 @@
                     clearTimeout(timeout);
                     timeout = setTimeout(later, wait);
                 };
+            },
+            
+            getTemperatureClass(temp) {
+                if (temp > 25) return 'temperature-hot';
+                if (temp < 18) return 'temperature-cold';
+                return 'temperature-normal';
+            },
+            
+            getHumidityClass(humidity) {
+                if (humidity > 70) return 'humidity-high';
+                if (humidity < 30) return 'humidity-low';
+                return 'humidity-normal';
+            },
+            
+            getBatteryClass(battery) {
+                if (battery > 70) return 'battery-high';
+                if (battery > 30) return 'battery-medium';
+                return 'battery-low';
+            },
+            
+            getBatteryStatus(battery) {
+                if (battery > 80) return 'Отличный заряд';
+                if (battery > 50) return 'Хороший заряд';
+                if (battery > 20) return 'Требуется зарядка';
+                return 'Низкий заряд';
+            },
+            
+            getVoltageClass(voltage) {
+                if (voltage > 240) return 'voltage-high';
+                if (voltage < 210) return 'voltage-low';
+                return 'voltage-normal';
+            },
+            
+            getVoltageStatus(voltage) {
+                if (voltage > 240) return 'Высокое напряжение';
+                if (voltage < 210) return 'Низкое напряжение';
+                return 'Нормальное';
+            },
+            
+            getVoltageSummary(voltageData) {
+                const voltages = Object.values(voltageData);
+                if (voltages.length === 0) {
+                    return {
+                        title: 'Нет данных',
+                        message: 'Данные о напряжении отсутствуют',
+                        background: 'rgba(221, 221, 221, 0.1)',
+                        color: '#999',
+                        indicator: '#ddd'
+                    };
+                }
+                
+                const avgVoltage = voltages.reduce((a, b) => a + b, 0) / voltages.length;
+                const minVoltage = Math.min(...voltages);
+                const maxVoltage = Math.max(...voltages);
+                
+                if (avgVoltage >= 210 && avgVoltage <= 240 && maxVoltage - minVoltage < 20) {
+                    return {
+                        title: 'Напряжение в норме',
+                        message: `Среднее: ${avgVoltage.toFixed(1)}В, разброс: ${(maxVoltage - minVoltage).toFixed(1)}В`,
+                        background: 'rgba(76, 175, 80, 0.1)',
+                        color: '#4CAF50',
+                        indicator: '#4CAF50'
+                    };
+                } else if (avgVoltage < 200 || avgVoltage > 250) {
+                    return {
+                        title: 'Внимание!',
+                        message: `Среднее: ${avgVoltage.toFixed(1)}В - вне нормального диапазона`,
+                        background: 'rgba(244, 67, 54, 0.1)',
+                        color: '#f44336',
+                        indicator: '#f44336'
+                    };
+                } else {
+                    return {
+                        title: 'Небольшие отклонения',
+                        message: `Среднее: ${avgVoltage.toFixed(1)}В, разброс: ${(maxVoltage - minVoltage).toFixed(1)}В`,
+                        background: 'rgba(255, 152, 0, 0.1)',
+                        color: '#ff9800',
+                        indicator: '#ff9800'
+                    };
+                }
             }
         };
         
@@ -496,6 +621,214 @@
                         ` : ''}
                     </div>
                 `;
+            },
+            
+            renderSensorSection(sensors) {
+                if (Object.keys(sensors).length === 0) return '';
+                
+                let html = `<div class="sensor-section">`;
+                html += `<div class="sensor-title"><i class="fas fa-chart-line"></i> Данные сенсоров</div>`;
+                html += `<div class="sensor-grid">`;
+                
+                // Температура в помещении
+                if (sensors.temperature_indoor) {
+                    const temp = sensors.temperature_indoor;
+                    const tempValue = parseFloat(temp.value);
+                    const tempClass = Utils.getTemperatureClass(tempValue);
+                    html += `
+                        <div class="sensor-item">
+                            <div class="sensor-label">
+                                <i class="fas fa-home"></i> Температура в доме
+                            </div>
+                            <div class="sensor-value ${tempClass}">
+                                ${temp.value}<span class="sensor-unit">${temp.unit}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Температура на улице
+                if (sensors.temperature_outdoor) {
+                    const temp = sensors.temperature_outdoor;
+                    const tempValue = parseFloat(temp.value);
+                    const tempClass = Utils.getTemperatureClass(tempValue);
+                    html += `
+                        <div class="sensor-item">
+                            <div class="sensor-label">
+                                <i class="fas fa-cloud-sun"></i> Температура на улице
+                            </div>
+                            <div class="sensor-value ${tempClass}">
+                                ${temp.value}<span class="sensor-unit">${temp.unit}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Влажность
+                if (sensors.humidity) {
+                    const humidity = sensors.humidity;
+                    const humidityValue = parseFloat(humidity.value);
+                    const humidityClass = Utils.getHumidityClass(humidityValue);
+                    html += `
+                        <div class="sensor-item">
+                            <div class="sensor-label">
+                                <i class="fas fa-tint"></i> Влажность
+                            </div>
+                            <div class="sensor-value ${humidityClass}">
+                                ${humidity.value}<span class="sensor-unit">${humidity.unit}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Батарея
+                if (sensors.battery) {
+                    const battery = sensors.battery;
+                    const batteryValue = parseFloat(battery.value);
+                    const batteryClass = Utils.getBatteryClass(batteryValue);
+                    html += `
+                        <div class="sensor-item">
+                            <div class="sensor-label">
+                                <i class="fas fa-battery-full"></i> Батарея датчика
+                            </div>
+                            <div class="sensor-value ${batteryClass}">
+                                ${battery.value}<span class="sensor-unit">${battery.unit}</span>
+                            </div>
+                            <div style="font-size: 11px; color: var(--tg-theme-hint-color); margin-top: 4px;">
+                                ${Utils.getBatteryStatus(batteryValue)}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += `</div>`;
+                
+                // Напряжение по фазам
+                const voltages = [];
+                const voltageData = {};
+                
+                if (sensors.voltage_l1) {
+                    voltages.push(sensors.voltage_l1);
+                    voltageData.l1 = parseFloat(sensors.voltage_l1.value);
+                }
+                if (sensors.voltage_l2) {
+                    voltages.push(sensors.voltage_l2);
+                    voltageData.l2 = parseFloat(sensors.voltage_l2.value);
+                }
+                if (sensors.voltage_l3) {
+                    voltages.push(sensors.voltage_l3);
+                    voltageData.l3 = parseFloat(sensors.voltage_l3.value);
+                }
+                
+                if (voltages.length > 0) {
+                    html += `
+                        <div class="sensor-title" style="margin-top: 20px; margin-bottom: 16px;">
+                            <i class="fas fa-bolt"></i> Напряжение по фазам
+                        </div>
+                        <div class="sensor-grid">
+                    `;
+                    
+                    // Фаза L1
+                    if (sensors.voltage_l1) {
+                        const voltage = sensors.voltage_l1;
+                        const voltageClass = Utils.getVoltageClass(parseFloat(voltage.value));
+                        html += `
+                            <div class="sensor-item">
+                                <div class="sensor-label">
+                                    <i class="fas fa-bolt" style="color: #ff6b6b;"></i> Фаза L1
+                                </div>
+                                <div class="sensor-value ${voltageClass}">
+                                    ${voltage.value}<span class="sensor-unit">${voltage.unit}</span>
+                                </div>
+                                <div style="font-size: 12px; margin-top: 4px; color: var(--tg-theme-hint-color);">
+                                    ${Utils.getVoltageStatus(parseFloat(voltage.value))}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Фаза L2
+                    if (sensors.voltage_l2) {
+                        const voltage = sensors.voltage_l2;
+                        const voltageClass = Utils.getVoltageClass(parseFloat(voltage.value));
+                        html += `
+                            <div class="sensor-item">
+                                <div class="sensor-label">
+                                    <i class="fas fa-bolt" style="color: #4ecdc4;"></i> Фаза L2
+                                </div>
+                                <div class="sensor-value ${voltageClass}">
+                                    ${voltage.value}<span class="sensor-unit">${voltage.unit}</span>
+                                </div>
+                                <div style="font-size: 12px; margin-top: 4px; color: var(--tg-theme-hint-color);">
+                                    ${Utils.getVoltageStatus(parseFloat(voltage.value))}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Фаза L3
+                    if (sensors.voltage_l3) {
+                        const voltage = sensors.voltage_l3;
+                        const voltageClass = Utils.getVoltageClass(parseFloat(voltage.value));
+                        html += `
+                            <div class="sensor-item">
+                                <div class="sensor-label">
+                                    <i class="fas fa-bolt" style="color: #45b7d1;"></i> Фаза L3
+                                </div>
+                                <div class="sensor-value ${voltageClass}">
+                                    ${voltage.value}<span class="sensor-unit">${voltage.unit}</span>
+                                </div>
+                                <div style="font-size: 12px; margin-top: 4px; color: var(--tg-theme-hint-color);">
+                                    ${Utils.getVoltageStatus(parseFloat(voltage.value))}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Общая энергия
+                    if (sensors.total_energy) {
+                        const energy = sensors.total_energy;
+                        html += `
+                            <div class="sensor-item">
+                                <div class="sensor-label">
+                                    <i class="fas fa-chart-bar"></i> Потребление
+                                </div>
+                                <div class="sensor-value">
+                                    ${energy.value}<span class="sensor-unit">${energy.unit}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    html += `</div>`;
+                    
+                    // Сводка по напряжению
+                    const voltageSummary = Utils.getVoltageSummary(voltageData);
+                    html += `
+                        <div class="voltage-summary" style="background: ${voltageSummary.background};">
+                            <div style="font-size: 24px; color: ${voltageSummary.color};">
+                                <i class="fas fa-charging-station"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px; color: ${voltageSummary.color};">
+                                    ${voltageSummary.title}
+                                </div>
+                                <div style="font-size: 14px; color: ${voltageSummary.color}; opacity: 0.9;">
+                                    ${voltageSummary.message}
+                                </div>
+                            </div>
+                            <div style="
+                                width: 12px;
+                                height: 12px;
+                                border-radius: 50%;
+                                background: ${voltageSummary.indicator};
+                            "></div>
+                        </div>
+                    `;
+                }
+                
+                html += `</div>`;
+                return html;
             },
             
             renderAreas() {
@@ -609,59 +942,7 @@
                 html += `</div>`;
                 
                 // Сенсоры
-                if (Object.keys(sensors).length > 0) {
-                    html += `<div class="sensor-section">`;
-                    html += `<div class="sensor-title"><i class="fas fa-chart-line"></i> Данные сенсоров</div>`;
-                    html += `<div class="sensor-grid">`;
-                    
-                    // Температура в помещении
-                    if (sensors.temperature_indoor) {
-                        const temp = sensors.temperature_indoor;
-                        html += `
-                            <div class="sensor-item">
-                                <div class="sensor-label">Температура в доме</div>
-                                <div class="sensor-value">${temp.value}<span class="sensor-unit">${temp.unit}</span></div>
-                            </div>
-                        `;
-                    }
-                    
-                    // Температура на улице
-                    if (sensors.temperature_outdoor) {
-                        const temp = sensors.temperature_outdoor;
-                        html += `
-                            <div class="sensor-item">
-                                <div class="sensor-label">Температура на улице</div>
-                                <div class="sensor-value">${temp.value}<span class="sensor-unit">${temp.unit}</span></div>
-                            </div>
-                        `;
-                    }
-                    
-                    // Влажность
-                    if (sensors.humidity) {
-                        const humidity = sensors.humidity;
-                        html += `
-                            <div class="sensor-item">
-                                <div class="sensor-label">Влажность</div>
-                                <div class="sensor-value">${humidity.value}<span class="sensor-unit">${humidity.unit}</span></div>
-                            </div>
-                        `;
-                    }
-                    
-                    // Батарея
-                    if (sensors.battery) {
-                        const battery = sensors.battery;
-                        const batteryLevel = parseInt(battery.value);
-                        const batteryClass = batteryLevel > 70 ? 'success' : batteryLevel > 30 ? 'warning' : 'danger';
-                        html += `
-                            <div class="sensor-item">
-                                <div class="sensor-label">Батарея датчика</div>
-                                <div class="sensor-value">${battery.value}<span class="sensor-unit">${battery.unit}</span></div>
-                            </div>
-                        `;
-                    }
-                    
-                    html += `</div></div>`;
-                }
+                html += this.renderSensorSection(sensors);
                 
                 document.getElementById('app').innerHTML = html;
             }
@@ -675,10 +956,7 @@
                 
                 try {
                     await this.loadAreas();
-                    
-                    // Настраиваем автообновление
                     this.setupAutoRefresh();
-                    
                 } catch (error) {
                     console.error('Initialization error:', error);
                     Render.showError('Ошибка загрузки приложения', 'Controller.init()');
@@ -741,14 +1019,12 @@
                     const response = await ApiClient.controlDevice(entityId, action);
                     
                     if (response.success) {
-                        // Обновляем данные после успешного переключения
                         if (AppState.currentView === 'areas') {
                             await this.loadAreas();
                         } else if (AppState.currentView === 'area') {
                             await this.selectArea(AppState.currentArea);
                         }
                         
-                        // Показываем уведомление в Telegram
                         if (tg && tg.showPopup) {
                             const deviceName = entityId.split('.')[1] || entityId;
                             tg.showPopup({
@@ -800,11 +1076,9 @@
             },
             
             setupAutoRefresh() {
-                // Очищаем старые интервалы
                 AppState.subscriptions.forEach(clearInterval);
                 AppState.subscriptions.clear();
                 
-                // Устанавливаем новый интервал обновления
                 const intervalId = setInterval(() => {
                     if (AppState.currentView === 'areas') {
                         this.loadAreas();
@@ -819,12 +1093,10 @@
         
         // Обработчики Telegram Web App
         if (tg) {
-            // Обработка изменения размера окна
             tg.onEvent('viewportChanged', (event) => {
                 console.log('Viewport changed:', event);
             });
             
-            // Обработка нажатия кнопки "Назад"
             tg.onEvent('backButtonClicked', () => {
                 if (AppState.currentView === 'area') {
                     Controller.goBack();
@@ -833,7 +1105,6 @@
                 return false;
             });
             
-            // Показываем кнопку "Назад" если мы не на главной
             tg.BackButton.show();
             tg.BackButton.onClick(() => {
                 if (AppState.currentView === 'area') {
@@ -841,7 +1112,6 @@
                 }
             });
             
-            // Обновляем видимость кнопки "Назад"
             const updateBackButton = () => {
                 if (AppState.currentView === 'area') {
                     tg.BackButton.show();
@@ -850,7 +1120,6 @@
                 }
             };
             
-            // Монтируем обновление кнопки "Назад"
             const originalRender = Render.renderAreas;
             Render.renderAreas = function() {
                 originalRender.call(this);
