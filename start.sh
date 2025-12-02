@@ -2,7 +2,7 @@
 
 # Активируем виртуальное окружение (если есть)
 if [ -d "venv" ]; then
-    source .venv/Scripts/activate
+    source venv/bin/activate
 fi
 
 # Устанавливаем зависимости

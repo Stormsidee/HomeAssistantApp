@@ -10,17 +10,27 @@
         @media (prefers-color-scheme: dark) {
             :root {
                 --light-gray: #2d2d2d;
-                --border-color: #444444;
+                --border-color: #444444;  /* ← Убедись что эта переменная установлена */
                 --shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
             }
             
             .device-toggle {
-                background: #555;  /* Темнее в темной теме */
+                background: #555;
             }
             
             .sensor-section {
-                background: rgba(37, 117, 252, 0.08);  /* Чуть светлее в темной теме */
+                background: rgba(37, 117, 252, 0.08);
                 border-color: rgba(37, 117, 252, 0.15);
+            }
+            
+            /* Дополнительно для устройства */
+            .device-card {
+                border-color: #555;  /* ← Более видимая обводка в темной теме */
+            }
+            
+            .device-card.active {
+                background: rgba(76, 175, 80, 0.2);  /* ← Зеленый ярче в темной теме */
+                border-color: rgba(76, 175, 80, 0.5);
             }
         }
         :root {
@@ -185,17 +195,26 @@
         }
         
         .device-card {
-            background: var(--light-gray);
+            background: var(--tg-theme-secondary-bg-color);  /* ← Используем Telegram переменную */
             border-radius: 12px;
             padding: 14px;
             transition: all 0.2s;
+            border: 1px solid var(--border-color);  /* ← Добавляем обводку для всех */
         }
-        
+
         .device-card.active {
-            background: rgba(76, 175, 80, 0.1);
-            border: 1px solid rgba(76, 175, 80, 0.3);
+            background: rgba(76, 175, 80, 0.15);  /* ← Чуть ярче зеленый */
+            border: 1px solid rgba(76, 175, 80, 0.4);  /* ← Чуть ярче обводка */
         }
-        
+
+        .device-card:not(.active) {
+            opacity: 0.9;
+        }
+
+        .device-card:not(.active):hover {
+            opacity: 1;
+        }
+                        
         .device-name {
             font-size: 14px;
             font-weight: 500;
