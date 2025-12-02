@@ -1050,14 +1050,6 @@
                             await this.selectArea(AppState.currentArea);
                         }
                         
-                        if (tg && tg.showPopup) {
-                            const deviceName = entityId.split('.')[1] || entityId;
-                            tg.showPopup({
-                                title: 'Успешно',
-                                message: `Устройство ${deviceName} ${action === 'on' ? 'включено' : 'выключено'}`,
-                                buttons: [{ type: 'ok' }]
-                            });
-                        }
                     } else {
                         throw new Error(response.error || 'Ошибка управления');
                     }
