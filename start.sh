@@ -2,19 +2,15 @@
 
 # Активируем виртуальное окружение (если есть)
 if [ -d "venv" ]; then
-    source venv/bin/activate
+    source env/bin/activate
 fi
 
 # Устанавливаем зависимости
-pipx install Flask
-pipx install Flask-CORS
-pipx install python-dotenv
-pipx install requests
-pipx install urllib3
+pip install -r requirements.txt
 
 # Запускаем API сервер и Telegram бота в фоне
 echo "Запуск Home Assistant Mini App..."
-python api_server.py &
+python3 api_server.py &
 API_PID=$!
 
 echo "API сервер запущен с PID: $API_PID"
