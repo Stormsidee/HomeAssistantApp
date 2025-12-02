@@ -1,0 +1,878 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏠 Управление домиками</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --tg-theme-bg-color: #ffffff;
+            --tg-theme-text-color: #000000;
+            --tg-theme-hint-color: #999999;
+            --tg-theme-link-color: #2481cc;
+            --tg-theme-button-color: #2481cc;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-secondary-bg-color: #f1f1f1;
+            
+            --primary-color: #2481cc;
+            --success-color: #4CAF50;
+            --danger-color: #f44336;
+            --warning-color: #ff9800;
+            --light-gray: #f5f5f5;
+            --border-color: #e0e0e0;
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            padding-bottom: 20px;
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 0 12px;
+        }
+        
+        /* Header */
+        .header {
+            padding: 16px 0;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            background: var(--tg-theme-bg-color);
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .app-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .app-subtitle {
+            font-size: 14px;
+            color: var(--tg-theme-hint-color);
+            margin-top: 2px;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .icon-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--light-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            color: var(--tg-theme-text-color);
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+        
+        .icon-button:hover {
+            background: var(--border-color);
+            transform: scale(1.05);
+        }
+        
+        /* Cards */
+        .area-card {
+            background: var(--tg-theme-bg-color);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 14px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+        
+        .area-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+        
+        .area-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .area-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--tg-theme-text-color);
+        }
+        
+        .area-stats {
+            font-size: 14px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: var(--light-gray);
+        }
+        
+        .area-stats.on {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--success-color);
+        }
+        
+        .area-stats.off {
+            background: rgba(244, 67, 54, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .device-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        .device-card {
+            background: var(--light-gray);
+            border-radius: 12px;
+            padding: 14px;
+            transition: all 0.2s;
+        }
+        
+        .device-card.active {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        
+        .device-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .device-toggle {
+            width: 52px;
+            height: 28px;
+            background: #ddd;
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            margin: 0 auto;
+            transition: all 0.3s;
+        }
+        
+        .device-toggle.on {
+            background: var(--success-color);
+        }
+        
+        .toggle-handle {
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .device-toggle.on .toggle-handle {
+            transform: translateX(24px);
+        }
+        
+        /* Sensor Data */
+        .sensor-section {
+            background: rgba(37, 117, 252, 0.05);
+            border-radius: 16px;
+            padding: 18px;
+            margin-top: 20px;
+            border: 1px solid rgba(37, 117, 252, 0.1);
+        }
+        
+        .sensor-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--primary-color);
+        }
+        
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+        }
+        
+        .sensor-item {
+            background: white;
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .sensor-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 8px 0;
+        }
+        
+        .sensor-label {
+            font-size: 13px;
+            color: var(--tg-theme-hint-color);
+        }
+        
+        .sensor-unit {
+            font-size: 14px;
+            color: var(--primary-color);
+            margin-left: 4px;
+        }
+        
+        /* Loading & Error States */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--light-gray);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .error-icon {
+            font-size: 48px;
+            color: var(--danger-color);
+            margin-bottom: 16px;
+        }
+        
+        /* Back Button */
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 10px 0;
+            margin-bottom: 16px;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            color: var(--tg-theme-hint-color);
+            font-size: 13px;
+            border-top: 1px solid var(--border-color);
+            margin-top: 30px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            .device-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .sensor-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .area-name {
+                font-size: 16px;
+            }
+        }
+        
+        /* Animation for updates */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .updating {
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="app">
+            <!-- Приложение загружается здесь -->
+        </div>
+    </div>
+
+    <script>
+        // Конфигурация
+        const CONFIG = {
+            API_BASE: '/api',  // Используем относительный путь
+            REFRESH_INTERVAL: 10000, // 10 секунд
+            BOT_TOKEN: '8536434594:AAG3n0tCFBlg5NNEAgviT5IfutQNgolH5SU',
+            SECRET_KEY: 'your-secret-key-for-auth' // Должен совпадать с config.py
+        };
+        
+        // Инициализация Telegram Web App
+        let tg = null;
+        if (typeof Telegram !== 'undefined') {
+            tg = Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            tg.enableClosingConfirmation();
+            
+            // Устанавливаем цвет кнопки
+            tg.setHeaderColor('#2481cc');
+            tg.setBackgroundColor('#ffffff');
+        }
+        
+        // Состояние приложения
+        const AppState = {
+            currentView: 'areas', // 'areas', 'area', 'loading', 'error'
+            currentArea: null,
+            areas: {},
+            areaData: null,
+            isLoading: false,
+            lastUpdate: null,
+            subscriptions: new Set() // Для отписки от обновлений
+        };
+        
+        // API клиент
+        const ApiClient = {
+            headers: {
+                'Authorization': `Bearer ${CONFIG.SECRET_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            
+            async request(endpoint, options = {}) {
+                const url = `${CONFIG.API_BASE}${endpoint}`;
+                const defaultOptions = {
+                    headers: this.headers,
+                    ...options
+                };
+                
+                try {
+                    const response = await fetch(url, defaultOptions);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.error('API Error:', error);
+                    throw error;
+                }
+            },
+            
+            async getAreas() {
+                return this.request('/areas');
+            },
+            
+            async getArea(areaName) {
+                return this.request(`/area/${encodeURIComponent(areaName)}`);
+            },
+            
+            async controlDevice(entityId, action) {
+                return this.request('/device/control', {
+                    method: 'POST',
+                    body: JSON.stringify({ entity_id: entityId, action })
+                });
+            },
+            
+            async getDevice(entityId) {
+                return this.request(`/device/${encodeURIComponent(entityId)}`);
+            },
+            
+            async refreshCache() {
+                return this.request('/refresh', { method: 'POST' });
+            }
+        };
+        
+        // Утилиты
+        const Utils = {
+            formatTime(timestamp) {
+                if (!timestamp) return 'Неизвестно';
+                const date = new Date(timestamp * 1000);
+                return date.toLocaleTimeString('ru-RU', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+            },
+            
+            formatRelativeTime(timestamp) {
+                if (!timestamp) return '';
+                const now = Date.now() / 1000;
+                const diff = now - timestamp;
+                
+                if (diff < 60) return 'только что';
+                if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`;
+                if (diff < 86400) return `${Math.floor(diff / 3600)} ч назад`;
+                return `${Math.floor(diff / 86400)} дн назад`;
+            },
+            
+            capitalize(str) {
+                return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+            },
+            
+            debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+        };
+        
+        // Рендер компонентов
+        const Render = {
+            showLoading(message = 'Загрузка...') {
+                document.getElementById('app').innerHTML = `
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <div>${message}</div>
+                    </div>
+                `;
+            },
+            
+            showError(message, retryCallback = null) {
+                document.getElementById('app').innerHTML = `
+                    <div class="error-state">
+                        <div class="error-icon">⚠️</div>
+                        <h3>Ошибка</h3>
+                        <p>${message}</p>
+                        ${retryCallback ? `
+                            <button class="icon-button" onclick="${retryCallback}" style="margin-top: 20px;">
+                                <i class="fas fa-redo"></i> Повторить
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            },
+            
+            renderAreas() {
+                const { areas } = AppState;
+                const areasList = Object.keys(areas);
+                
+                if (areasList.length === 0) {
+                    return this.showError('Нет доступных пространств', 'Controller.loadAreas()');
+                }
+                
+                let html = `
+                    <div class="header">
+                        <div class="header-content">
+                            <div>
+                                <div class="app-title">🏠 Управление домиками</div>
+                                <div class="app-subtitle">
+                                    ${areasList.length} пространств • 
+                                    Обновлено: ${Utils.formatRelativeTime(AppState.lastUpdate)}
+                                </div>
+                            </div>
+                            <div class="header-actions">
+                                <button class="icon-button" onclick="Controller.refreshAll()" title="Обновить">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                areasList.forEach(areaName => {
+                    const area = areas[areaName];
+                    const statusClass = area.on_count > 0 ? 'on' : 'off';
+                    
+                    html += `
+                        <div class="area-card" onclick="Controller.selectArea('${areaName}')">
+                            <div class="area-header">
+                                <div class="area-name">${areaName}</div>
+                                <div class="area-stats ${statusClass}">
+                                    ${area.on_count}/${area.device_count} вкл
+                                </div>
+                            </div>
+                            <div class="device-grid">
+                                ${area.preview_devices.map(device => `
+                                    <div class="device-card ${device.state === 'on' ? 'active' : ''}">
+                                        <div class="device-name">${device.short_name}</div>
+                                        <div class="device-toggle ${device.state === 'on' ? 'on' : 'off'}" 
+                                             onclick="event.stopPropagation(); Controller.toggleDevice('${device.entity_id}', '${device.state}')">
+                                            <div class="toggle-handle"></div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                    <div class="footer">
+                        <div>Home Assistant Mini App</div>
+                        <div style="font-size: 11px; margin-top: 5px;">Обновляется автоматически каждые 10 сек</div>
+                    </div>
+                `;
+                
+                document.getElementById('app').innerHTML = html;
+            },
+            
+            renderArea() {
+                const { areaData } = AppState;
+                if (!areaData) return this.showError('Данные не загружены');
+                
+                const { area_name, devices, sensors, stats } = areaData;
+                
+                let html = `
+                    <div class="header">
+                        <div class="header-content">
+                            <div>
+                                <button class="back-button" onclick="Controller.goBack()">
+                                    <i class="fas fa-arrow-left"></i> Назад
+                                </button>
+                                <div class="app-title">${area_name}</div>
+                                <div class="app-subtitle">
+                                    ${stats.on}/${stats.total} устройств включено • 
+                                    ${Utils.formatRelativeTime(AppState.lastUpdate)}
+                                </div>
+                            </div>
+                            <div class="header-actions">
+                                <button class="icon-button" onclick="Controller.refreshArea()" title="Обновить">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Устройства
+                html += `<div class="device-grid">`;
+                devices.forEach(device => {
+                    html += `
+                        <div class="device-card ${device.state === 'on' ? 'active' : ''}">
+                            <div class="device-name">${device.short_name}</div>
+                            <div class="device-toggle ${device.state === 'on' ? 'on' : 'off'}" 
+                                 onclick="Controller.toggleDevice('${device.entity_id}', '${device.state}')">
+                                <div class="toggle-handle"></div>
+                            </div>
+                            <div style="font-size: 12px; color: ${device.state === 'on' ? 'var(--success-color)' : 'var(--danger-color)'}; margin-top: 8px; text-align: center;">
+                                ${device.state === 'on' ? 'ВКЛ' : 'ВЫКЛ'}
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+                
+                // Сенсоры
+                if (Object.keys(sensors).length > 0) {
+                    html += `<div class="sensor-section">`;
+                    html += `<div class="sensor-title"><i class="fas fa-chart-line"></i> Данные сенсоров</div>`;
+                    html += `<div class="sensor-grid">`;
+                    
+                    // Температура в помещении
+                    if (sensors.temperature_indoor) {
+                        const temp = sensors.temperature_indoor;
+                        html += `
+                            <div class="sensor-item">
+                                <div class="sensor-label">Температура в доме</div>
+                                <div class="sensor-value">${temp.value}<span class="sensor-unit">${temp.unit}</span></div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Температура на улице
+                    if (sensors.temperature_outdoor) {
+                        const temp = sensors.temperature_outdoor;
+                        html += `
+                            <div class="sensor-item">
+                                <div class="sensor-label">Температура на улице</div>
+                                <div class="sensor-value">${temp.value}<span class="sensor-unit">${temp.unit}</span></div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Влажность
+                    if (sensors.humidity) {
+                        const humidity = sensors.humidity;
+                        html += `
+                            <div class="sensor-item">
+                                <div class="sensor-label">Влажность</div>
+                                <div class="sensor-value">${humidity.value}<span class="sensor-unit">${humidity.unit}</span></div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Батарея
+                    if (sensors.battery) {
+                        const battery = sensors.battery;
+                        const batteryLevel = parseInt(battery.value);
+                        const batteryClass = batteryLevel > 70 ? 'success' : batteryLevel > 30 ? 'warning' : 'danger';
+                        html += `
+                            <div class="sensor-item">
+                                <div class="sensor-label">Батарея датчика</div>
+                                <div class="sensor-value">${battery.value}<span class="sensor-unit">${battery.unit}</span></div>
+                            </div>
+                        `;
+                    }
+                    
+                    html += `</div></div>`;
+                }
+                
+                document.getElementById('app').innerHTML = html;
+            }
+        };
+        
+        // Контроллер приложения
+        const Controller = {
+            async init() {
+                AppState.currentView = 'loading';
+                Render.showLoading('Загрузка приложения...');
+                
+                try {
+                    await this.loadAreas();
+                    
+                    // Настраиваем автообновление
+                    this.setupAutoRefresh();
+                    
+                } catch (error) {
+                    console.error('Initialization error:', error);
+                    Render.showError('Ошибка загрузки приложения', 'Controller.init()');
+                }
+            },
+            
+            async loadAreas() {
+                AppState.isLoading = true;
+                
+                try {
+                    const response = await ApiClient.getAreas();
+                    
+                    if (response.success) {
+                        AppState.areas = response.data;
+                        AppState.lastUpdate = response.timestamp;
+                        AppState.currentView = 'areas';
+                        Render.renderAreas();
+                    } else {
+                        throw new Error(response.error || 'Неизвестная ошибка');
+                    }
+                } catch (error) {
+                    console.error('Load areas error:', error);
+                    Render.showError(`Ошибка загрузки: ${error.message}`, 'Controller.loadAreas()');
+                } finally {
+                    AppState.isLoading = false;
+                }
+            },
+            
+            async selectArea(areaName) {
+                AppState.currentView = 'loading';
+                Render.showLoading(`Загрузка ${areaName}...`);
+                
+                try {
+                    const response = await ApiClient.getArea(areaName);
+                    
+                    if (response.success) {
+                        AppState.currentArea = areaName;
+                        AppState.areaData = response.data;
+                        AppState.lastUpdate = response.timestamp;
+                        AppState.currentView = 'area';
+                        Render.renderArea();
+                    } else {
+                        throw new Error(response.error || 'Неизвестная ошибка');
+                    }
+                } catch (error) {
+                    console.error('Select area error:', error);
+                    Render.showError(`Ошибка загрузки: ${error.message}`, `Controller.selectArea('${areaName}')`);
+                }
+            },
+            
+            async toggleDevice(entityId, currentState) {
+                const action = currentState === 'on' ? 'off' : 'on';
+                const deviceElement = document.querySelector(`[onclick*="${entityId}"]`);
+                
+                if (deviceElement) {
+                    deviceElement.classList.add('updating');
+                }
+                
+                try {
+                    const response = await ApiClient.controlDevice(entityId, action);
+                    
+                    if (response.success) {
+                        // Обновляем данные после успешного переключения
+                        if (AppState.currentView === 'areas') {
+                            await this.loadAreas();
+                        } else if (AppState.currentView === 'area') {
+                            await this.selectArea(AppState.currentArea);
+                        }
+                        
+                        // Показываем уведомление в Telegram
+                        if (tg && tg.showPopup) {
+                            const deviceName = entityId.split('.')[1] || entityId;
+                            tg.showPopup({
+                                title: 'Успешно',
+                                message: `Устройство ${deviceName} ${action === 'on' ? 'включено' : 'выключено'}`,
+                                buttons: [{ type: 'ok' }]
+                            });
+                        }
+                    } else {
+                        throw new Error(response.error || 'Ошибка управления');
+                    }
+                } catch (error) {
+                    console.error('Toggle device error:', error);
+                    
+                    if (tg && tg.showPopup) {
+                        tg.showPopup({
+                            title: 'Ошибка',
+                            message: `Не удалось управлять устройством: ${error.message}`,
+                            buttons: [{ type: 'ok' }]
+                        });
+                    }
+                } finally {
+                    if (deviceElement) {
+                        deviceElement.classList.remove('updating');
+                    }
+                }
+            },
+            
+            goBack() {
+                AppState.currentView = 'areas';
+                AppState.currentArea = null;
+                AppState.areaData = null;
+                Render.renderAreas();
+            },
+            
+            async refreshAll() {
+                try {
+                    await ApiClient.refreshCache();
+                    await this.loadAreas();
+                } catch (error) {
+                    console.error('Refresh error:', error);
+                }
+            },
+            
+            async refreshArea() {
+                if (AppState.currentArea) {
+                    await this.selectArea(AppState.currentArea);
+                }
+            },
+            
+            setupAutoRefresh() {
+                // Очищаем старые интервалы
+                AppState.subscriptions.forEach(clearInterval);
+                AppState.subscriptions.clear();
+                
+                // Устанавливаем новый интервал обновления
+                const intervalId = setInterval(() => {
+                    if (AppState.currentView === 'areas') {
+                        this.loadAreas();
+                    } else if (AppState.currentView === 'area' && AppState.currentArea) {
+                        this.selectArea(AppState.currentArea);
+                    }
+                }, CONFIG.REFRESH_INTERVAL);
+                
+                AppState.subscriptions.add(intervalId);
+            }
+        };
+        
+        // Обработчики Telegram Web App
+        if (tg) {
+            // Обработка изменения размера окна
+            tg.onEvent('viewportChanged', (event) => {
+                console.log('Viewport changed:', event);
+            });
+            
+            // Обработка нажатия кнопки "Назад"
+            tg.onEvent('backButtonClicked', () => {
+                if (AppState.currentView === 'area') {
+                    Controller.goBack();
+                    return true;
+                }
+                return false;
+            });
+            
+            // Показываем кнопку "Назад" если мы не на главной
+            tg.BackButton.show();
+            tg.BackButton.onClick(() => {
+                if (AppState.currentView === 'area') {
+                    Controller.goBack();
+                }
+            });
+            
+            // Обновляем видимость кнопки "Назад"
+            const updateBackButton = () => {
+                if (AppState.currentView === 'area') {
+                    tg.BackButton.show();
+                } else {
+                    tg.BackButton.hide();
+                }
+            };
+            
+            // Монтируем обновление кнопки "Назад"
+            const originalRender = Render.renderAreas;
+            Render.renderAreas = function() {
+                originalRender.call(this);
+                updateBackButton();
+            };
+            
+            const originalRenderArea = Render.renderArea;
+            Render.renderArea = function() {
+                originalRenderArea.call(this);
+                updateBackButton();
+            };
+        }
+        
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            Controller.init();
+        });
+        
+        // Экспортируем контроллер для глобального доступа
+        window.Controller = Controller;
+        window.ApiClient = ApiClient;
+        window.Utils = Utils;
+    </script>
+</body>
+</html>
